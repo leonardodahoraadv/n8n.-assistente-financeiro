@@ -1,0 +1,1671 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// Converte \"dd/mm/aaaa\" em Date; aceita undefined/null\nfunction parseDataBR(dataStr) {\n  if (dataStr === undefined || dataStr === null || typeof dataStr !== \"string\") return null;\n  const parts = dataStr.split(\"/\");\n  if (parts.length !== 3) return null;\n  const [dia, mes, ano] = parts.map(Number);\n  return new Date(ano, mes - 1, dia);\n}\n\n// Converte Data do registro (ISO ou DD/MM/YYYY) em Date\nfunction toDate(val) {\n  if (val == null) return null;\n  if (val instanceof Date) return val;\n  if (typeof val === \"string\") {\n    if (val.includes(\"T\")) return new Date(val); // ISO\n    return parseDataBR(val); // DD/MM/YYYY\n  }\n  return null;\n}\n\n// Nomes corretos da tool gerar_relatorio\nconst dataInicialStr = $('Tools').item.json.data_inicio;\nconst dataFinalStr = $('Tools').item.json.data_fim;\nconst categoriaFiltrada = $('Tools').item.json.Categoria || \"Todos\";\n\nconst dataInicial = parseDataBR(dataInicialStr);\nconst dataFinal = parseDataBR(dataFinalStr);\n\nif (dataInicial === null || dataFinal === null) {\n  return [{ json: { error: \"Datas inválidas. Use data_inicio e data_fim no formato DD/MM/YYYY.\" } }];\n}\n\nconst dados = $input.first().json.data || [];\n\nlet total = 0;\nlet gastosFiltrados = [];\n\nfor (const gasto of dados) {\n  const dataGasto = toDate(gasto[\"Data\"]);\n\n  const dentroDoPeriodo = dataGasto && dataGasto >= dataInicial && dataGasto <= dataFinal;\n  const categoriaConfere = categoriaFiltrada === \"Todos\" || gasto[\"Categoria\"] === categoriaFiltrada;\n\n  if (dentroDoPeriodo && categoriaConfere) {\n    const valor = parseFloat(String(gasto[\"Valor\"] || 0).replace(\",\", \".\"));\n    total += valor;\n    gastosFiltrados.push(gasto);\n  }\n}\n\nreturn [\n  {\n    json: {\n      \"Total Filtrado (R$)\": total.toFixed(2),\n      \"Categoria\": categoriaFiltrada,\n      \"Período\": `${dataInicialStr} a ${dataFinalStr}`,\n      \"Registros Encontrados\": gastosFiltrados.length,\n      \"Detalhes\": gastosFiltrados\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2448,
+        960
+      ],
+      "id": "6f0376b9-0908-4aba-831d-7dd193ecaf4e",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        2224,
+        960
+      ],
+      "id": "02f8514f-a882-4e56-9eb3-34f907dda7c3",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "content": "## 0. Bot e Acesso\n**Objetivo:** Ter o **BOT_TOKEN** configurado e controlar quem pode usar o bot.\n\nNome do Bot: financeiro_asimov_bot",
+        "height": 348,
+        "width": 452,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "f538a2e6-01d1-4a25-84fe-95065df32fb2",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## 5. Persistência de Dados (Google Sheets)",
+        "height": 588,
+        "width": 1588,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1088,
+        704
+      ],
+      "id": "10025a41-c878-4582-a9e4-c3ca2bcf98d8",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## 2. Análise de Mídia (Opcional)\n**Objetivo:** Processar áudios, imagens e vídeos para extrair texto",
+        "height": 684,
+        "width": 1588,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1088,
+        0
+      ],
+      "id": "375a0c81-8db6-4955-84de-e274d9e54eb1",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ef87f926-f764-4bc2-a63c-45ea84e04a20",
+              "name": "message.name",
+              "value": "={{ $json.message.from.first_name }}",
+              "type": "string"
+            },
+            {
+              "id": "17ece5f6-5c14-4a62-be0d-74a2dfe69d98",
+              "name": "message.id",
+              "value": "={{ $json.message.from.id }}",
+              "type": "number"
+            },
+            {
+              "id": "e75b5736-a31c-40b0-97e1-6369713886a7",
+              "name": "message.text",
+              "value": "={{ $json.message.text }}",
+              "type": "string"
+            },
+            {
+              "id": "e446c945-d47e-4fa0-82cf-b4e9ef2efe96",
+              "name": "message.type",
+              "value": "={{\n  $json.message?.voice\n    ? 'audio'\n    : $json.message?.photo\n      ? 'image'\n      : 'text'\n}}",
+              "type": "string"
+            },
+            {
+              "id": "d9db3489-4eb4-41e8-9e69-b19710f35174",
+              "name": "message.file_id",
+              "value": "={{\n  $json.message?.voice?.file_id\n  || $json.message?.photo?.[ $json.message.photo.length - 1 ]?.file_id\n  || $json.message?.text\n}}",
+              "type": "string"
+            },
+            {
+              "id": "28aea13c-0468-42d9-a742-e2c29943118b",
+              "name": "message.caption",
+              "value": "={{ $json.message.caption }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        608,
+        160
+      ],
+      "id": "195954b3-f1d5-4e8f-8fa7-be2d2654af3b",
+      "name": "set"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "b877703e-eda6-49df-9bec-f8f859f51f8b",
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "[null]",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Text"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "efdf459a-b945-4d7a-986c-bb5eda570be5",
+                    "leftValue": "={{ $json.message.type }}",
+                    "rightValue": "audio",
+                    "operator": {
+                      "type": "string",
+                      "operation": "contains"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Audio"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "f9635718-eb43-4232-a316-274b441b8f6f"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Image"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "df0c94c4-0443-4ff5-abca-065e2db38bd5",
+                    "leftValue": "",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Video"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1136,
+        128
+      ],
+      "id": "99443c0e-cd8f-4cb1-9970-a5192335d4c9",
+      "name": "mediaType"
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {
+          "language": "pt"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        1872,
+        192
+      ],
+      "id": "b2949d8b-87b2-44da-8433-de57dfecbc46",
+      "name": "Transcribe a recording",
+      "credentials": {
+        "openAiApi": {
+          "id": "kQPcakerfeNBEf8z",
+          "name": "asimov.academy"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1584,
+        192
+      ],
+      "id": "237bf2b5-dbe9-44ff-8166-e9021ddb02b1",
+      "name": "getAudio",
+      "webhookId": "668d4715-7788-4a7d-9fb6-41a4a97a0c30",
+      "credentials": {
+        "telegramApi": {
+          "id": "FFwuZAybgIuj12Vc",
+          "name": "Telegram"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $('set').item.json.message.file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1584,
+        320
+      ],
+      "id": "5f0f664c-31a0-448c-880a-bdbf7a75ac26",
+      "name": "getImage",
+      "webhookId": "668d4715-7788-4a7d-9fb6-41a4a97a0c30",
+      "credentials": {
+        "telegramApi": {
+          "id": "FFwuZAybgIuj12Vc",
+          "name": "Telegram"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "GPT-4O"
+        },
+        "text": "Analise a imagem e extraia APENAS as seguintes informações no formato especificado:\n\n**DADOS OBRIGATÓRIOS:**\n1. **Valor Total:** [número com 2 casas decimais, use ponto como separador]\n2. **Data:** [formato DD/MM/YYYY]\n3. **Estabelecimento:** [nome do mercado/loja]\n4. **Método de Pagamento:** [Cartão de Crédito/Débito/Pix/Dinheiro]\n\n**FORMATO DE RESPOSTA:**\nResponda EXATAMENTE neste formato, sem texto adicional:\n\nValor: [valor]\nData: [data]\nLocal: [estabelecimento]\nPagamento: [método]\n\n**REGRAS:**\n- Se não conseguir identificar algum dado, use \"Não identificado\"\n- Valor deve estar no formato 000.00 (com ponto)\n- Data no formato DD/MM/YYYY\n- Seja objetivo, sem descrições narrativas",
+        "inputType": "base64",
+        "options": {
+          "detail": "high"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        1872,
+        320
+      ],
+      "id": "bafe4ced-29fa-4689-8c91-70c65054460f",
+      "name": "Analyze image",
+      "credentials": {
+        "openAiApi": {
+          "id": "kQPcakerfeNBEf8z",
+          "name": "asimov.academy"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "text": "Descreva o vídeo",
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        1872,
+        464
+      ],
+      "id": "2e74c4fb-da1c-4fc1-b041-9d6681e84c33",
+      "name": "Analyze video",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $('set').item.json.message.file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1584,
+        464
+      ],
+      "id": "6b7ba725-9df5-418b-b3ea-99e09c248729",
+      "name": "getVideo",
+      "webhookId": "668d4715-7788-4a7d-9fb6-41a4a97a0c30",
+      "credentials": {
+        "telegramApi": {
+          "id": "FFwuZAybgIuj12Vc",
+          "name": "Telegram"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "numberInputs": 4
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2208,
+        128
+      ],
+      "id": "c3b12109-b998-4a82-8a78-cc015ef15217",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9cd2deee-e81d-4543-97ba-06b6ad7ff479",
+              "name": "text",
+              "value": "={{\n  $if(\n    $('set').item.json.message.caption && $('Analyze image').isExecuted,\n    $('set').item.json.message.caption + '\\n\\n' + $('Analyze image').item.json['0'].content[0].text,\n    $if(\n      $('Analyze image').isExecuted,\n      $('Analyze image').item.json['0'].content[0].text,\n      $if(\n        $('set').item.json.message.caption,\n        $('set').item.json.message.caption,\n        $json.message.text || ''\n      )\n    )\n  )\n}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2400,
+        160
+      ],
+      "id": "edcce3a2-f108-41ae-bcea-0e5a417be234",
+      "name": "text"
+    },
+    {
+      "parameters": {
+        "content": "## 2.1 Agente Financeiro (LLM + Tools)\n**Objetivo:** Processar entrada e chamar tools automaticamente",
+        "height": 684,
+        "width": 1332,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2688,
+        0
+      ],
+      "id": "013ecd37-c1ec-4dcd-ab7b-e0822a6951cd",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('set').item.json.message.id }}memory",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryRedisChat",
+      "typeVersion": 1.5,
+      "position": [
+        3328,
+        448
+      ],
+      "id": "2be526d1-6ec1-4757-a68f-cdb63094ee56",
+      "name": "Chat Memory",
+      "credentials": {
+        "redis": {
+          "id": "Dn5RFTo74EyhisCq",
+          "name": "asimov.redis"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "description": "Registra um novo gasto financeiro com valor, data, categoria e método de pagamento",
+        "workflowId": {
+          "__rl": true,
+          "value": "={{ $workflow.id}}",
+          "mode": "id",
+          "cachedResultUrl": "/workflow/=%7B%7B%20$workflow.id%7D%7D"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Descrição": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Descri__o', `Descrição curta do gasto extraída da mensagem do usuário (ex: \"mercado\", \"uber\", \"aluguel\", \"farmácia\"). Use as palavras-chave mencionadas pelo usuário.`, 'string') }}",
+            "Tool": "Registrar Gasto",
+            "IdConversa": "={{ $('set').item.json.message.id }}",
+            "Categoria": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Categoria', `Categoria do gasto inferida automaticamente. Valores válidos: Alimentação, Transporte, Moradia, Saúde, Lazer, Educação, Vestuário, Tecnologia, Financeiro, Outros.`, 'string') }}",
+            "Data": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Data', `Data do gasto no formato DD/MM/YYYY. Converta automaticamente \"hoje\", \"ontem\" ou datas parciais (DD/MM) para o formato completo.`, 'string') }}",
+            "Mês": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('M_s', `Mês do gasto extraído da data no formato \"MM/YYYY\" (ex: \"02/2026\") ou por extenso \"Fevereiro/2026\". Use a data fornecida para gerar este campo automaticamente.`, 'string') }}",
+            "Valor": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Valor', `Valor numérico do gasto sem símbolos monetários. Extraia de formatos como \"R$ 45,50\", \"45.5\", \"45\", \"R$1.200,00\" e converta para número decimal (ex: 45.50, 1200.00). Use ponto como separador decimal.`, 'string') }}",
+            "Tipo de Gasto": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Tipo_de_Gasto', `Tipo do gasto: \"Fixo\" para gastos recorrentes (aluguel, internet, plano de saúde, mensalidade, assinatura) ou \"Variável\" para gastos esporádicos (mercado, restaurante, uber, roupas).`, 'string') }}",
+            "Método de Pagamento": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('M_todo_de_Pagamento', `Forma de pagamento identificada na mensagem: \"Pix\", \"Cartão de Crédito\", \"Débito\" ou \"Dinheiro\". Se não mencionado, use \"Não informado\".`, 'string') }}",
+            "tipoTransacao": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('tipoTransacao', `\"Entrada\" para recebimentos (salário, freelance) ou \"Saída\" para gastos (mercado, contas). Identifique pela descrição usando palavras-chave.`, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Tool",
+              "displayName": "Tool",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "IdConversa",
+              "displayName": "IdConversa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "data_fim",
+              "displayName": "data_fim",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            },
+            {
+              "id": "Descrição",
+              "displayName": "Descrição",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "data_inicio",
+              "displayName": "data_inicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            },
+            {
+              "id": "Categoria",
+              "displayName": "Categoria",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "Data",
+              "displayName": "Data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "Mês",
+              "displayName": "Mês",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "Valor",
+              "displayName": "Valor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "Tipo de Gasto",
+              "displayName": "Tipo de Gasto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "Método de Pagamento",
+              "displayName": "Método de Pagamento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "tipoTransacao",
+              "displayName": "tipoTransacao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        3584,
+        928
+      ],
+      "id": "13cc48ab-6455-4133-80ac-78c1f3b33c71",
+      "name": "registrar_gasto"
+    },
+    {
+      "parameters": {
+        "description": "=Gera um relatório financeiro detalhado com filtros por período e categoria opcional.",
+        "workflowId": {
+          "__rl": true,
+          "value": "={{ $workflow.id }}",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "IdConversa": "={{ $('set').item.json.message.id }}",
+            "Tool": "Relatorio",
+            "Categoria": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Categoria', `Categoria específica para filtrar (Alimentação, Transporte, Moradia, etc.) ou \"Todos\" para mostrar todas as categorias. Se não especificado, use \"Todos\".`, 'string') }}",
+            "data_fim": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('data_fim', `Data final do período no formato DD/MM/YYYY. Extraia da mensagem do usuário ou use a data atual se for período aberto (ex: \"gastos de janeiro\" → \"31/01/2026\", \"gastos até hoje\" → data atual).`, 'string') }}",
+            "data_inicio": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('data_inicio', `Data inicial do período no formato DD/MM/YYYY. Extraia da mensagem do usuário (ex: \"gastos de janeiro\" → \"01/01/2026\", \"gastos da semana passada\" → calcule a data).`, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Tool",
+              "displayName": "Tool",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "IdConversa",
+              "displayName": "IdConversa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "data_fim",
+              "displayName": "data_fim",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "Descrição",
+              "displayName": "Descrição",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            },
+            {
+              "id": "data_inicio",
+              "displayName": "data_inicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "Categoria",
+              "displayName": "Categoria",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "Data",
+              "displayName": "Data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            },
+            {
+              "id": "Mês",
+              "displayName": "Mês",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            },
+            {
+              "id": "Valor",
+              "displayName": "Valor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            },
+            {
+              "id": "Tipo de Gasto",
+              "displayName": "Tipo de Gasto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            },
+            {
+              "id": "Método de Pagamento",
+              "displayName": "Método de Pagamento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        3456,
+        928
+      ],
+      "id": "f5f195d6-45cc-4304-8b37-662da7e2ea16",
+      "name": "gerar_relatorio"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolCalculator",
+      "typeVersion": 1,
+      "position": [
+        3712,
+        928
+      ],
+      "id": "a17d4618-d8a8-4568-8405-c056ca3af3c9",
+      "name": "calcular"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('set').item.json.message.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        4304,
+        160
+      ],
+      "id": "874a5f51-97cd-4515-b595-3987a5574445",
+      "name": "Send a text message",
+      "webhookId": "e58fb267-671b-46f1-8b09-6303c3789dbe",
+      "credentials": {
+        "telegramApi": {
+          "id": "xdIMlVirwo4BNxKR",
+          "name": "asimov.financeiro"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## 7. Mensagem Final (Telegram Reply)\n**Objetivo:** Enviar resposta formatada ao usuário",
+        "height": 688,
+        "width": 720,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        4032,
+        0
+      ],
+      "typeVersion": 1,
+      "id": "54b068df-6e07-420e-b2a5-a826f16ed97e",
+      "name": "Sticky Note27"
+    },
+    {
+      "parameters": {
+        "content": "## 1. Recepção e Processamento Inicial\n**Objetivo:** Capturar entrada do usuário via Telegram e preparar dados\n\n",
+        "height": 336,
+        "width": 608,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        464,
+        0
+      ],
+      "id": "74d13ec3-7d0e-43d5-b84b-cf50e31d0d35",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "content": "## 3. Configuração das Tools\n\n### Tool 1: registrar_gasto\n- [ ] Name: \"registrar_gasto\"\n- [ ] Description clara sobre quando usar\n- [ ] Schema com campos: valor, data, descricao, categoria, tipo, metodo_pagamento\n- [ ] Workflow filho chamando Google Sheets Append\n- [x] Coluna IdConversa sendo populada\n\n### Tool 2: gerar_relatorio\n- [ ] Name: \"gerar_relatorio\"\n- [ ] Schema: data_inicio, data_fim, categoria (opcional)\n- [ ] Workflow filho: Get rows → Aggregate → Code → Retorno\n- [ ] Filtro por IdConversa + período + categoria funcionando\n\n### Tool 3: calcular\n- [ ] Name: \"calcular\"\n- [ ] Schema: expressao (string)\n- [ ] Node Code executando eval seguro ou Math.js",
+        "height": 592,
+        "width": 1296,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        2688,
+        704
+      ],
+      "typeVersion": 1,
+      "id": "113d13e9-f65a-49c1-b9ba-d546234b2599",
+      "name": "Sticky Note28"
+    },
+    {
+      "parameters": {
+        "content": "",
+        "height": 560,
+        "width": 672,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        3296,
+        720
+      ],
+      "id": "c390715b-aae3-4865-8701-7ea92dbbd789",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "content": "## **Etapa 0: Infraestrutura Básica**\n**Objetivo:** Setup Inicial do Ambiente\n\n### Checklist\n- [ ] Tabelas criadas (data table)\n- [ ] Credenciais Telegram Bot configuradas\n- [ ] Credenciais LLM (Anthropic/OpenAI) configuradas\n- [ ] Planilha criada com estrutura correta\n\n## **Etapa 1: Configuração do Bot**\n**Objetivo:** Telegram Bot Setup\n\n### Checklist\n- [ ] Bot criado no BotFather\n- [ ] BOT_TOKEN obtido e salvo\n- [ ] Webhook ou polling configurado\n- [ ] Teste de recepção de mensagens funcionando\n\n## **Etapa 2: Fluxo Principal**\n**Objetivo:** Pipeline de Processamento\n\n### Checklist\n- [ ] Telegram Trigger → SET → mediaType funcionando\n- [ ] Agente IA recebendo input formatado\n- [ ] Tools sendo chamadas automaticamente\n- [ ] Resposta retornando ao Telegram\n\n## **Etapa 3: Tools e Subworkflows**\n**Objetivo:** Configuração das 3 Tools\n\n### Checklist\n- [ ] `registrar_gasto` salvando na planilha\n- [ ] `gerar_relatorio` retornando dados filtrados\n- [ ] `calcular` executando operações matemáticas\n- [ ] Todos os workflows filhos testados individualmente\n\n## **Etapa 4: Validações e Tratamento de Erros**\n**Objetivo:** Regras de Negócio\n\n### Checklist\n- [ ] Valor obrigatório e > 0\n- [ ] Data validada (não aceitar futuro distante)\n- [ ] Categoria inferida corretamente\n- [ ] Tipo (Fixo/Variável) sendo detectado\n- [ ] Mensagens de erro claras ao usuário\n\n## **Etapa 5: Testes de Casos de Uso**\n**Objetivo:** Cenários Reais de Teste\n\n### Checklist\n- [ ] `\"R$45 mercado hoje\"` → Registra Alimentação\n- [ ] `\"Aluguel R$800 dia 05/12 pix\"` → Registra Moradia/Fixo/Pix\n- [ ] `\"gastos de janeiro\"` → Retorna relatório do mês\n- [ ] `\"quanto gastei com transporte?\"` → Filtra categoria\n- [ ] Entrada incompleta solicita informação faltante\n\n## ** Critérios de Sucesso**\n**Objetivo:** O bot está pronto quando:\n\n### Checklist\n- [ ] Registra gastos com 1 mensagem simples\n- [ ] Gera relatórios precisos por período/categoria\n- [ ] Responde em linguagem natural clara\n- [ ] Não perde contexto entre mensagens\n- [ ] Trata erros sem travar o fluxo\n\n**Data de Conclusão:** ___/___/______\n**Responsável:** _________________\n\n\n",
+        "height": 1776,
+        "width": 1072
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        368
+      ],
+      "id": "4cf37779-4e7b-461d-8356-66942feb80cd",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "cz4SKCAvyQfpA587",
+          "mode": "list",
+          "cachedResultName": "Agente Financeiro",
+          "cachedResultUrl": "/projects/JKObSGCtgho7DIBh/datatables/cz4SKCAvyQfpA587"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Descricao": "={{ $json['Descrição'] }}",
+            "Metodo": "={{ $json['Método de Pagamento'] }}",
+            "Tipo": "={{ $json['Tipo de Gasto'] }}",
+            "Valor": "={{ $json.Valor }}",
+            "Categoria": "={{ $json.Categoria }}",
+            "Mes": "={{ $json['Mês'] }}",
+            "Data": "={{ $json.Data }}",
+            "IdConversa": "={{ $('Tools').item.json.IdConversa }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "IdConversa",
+              "displayName": "IdConversa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Mes",
+              "displayName": "Mes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Data",
+              "displayName": "Data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Categoria",
+              "displayName": "Categoria",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Valor",
+              "displayName": "Valor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Tipo",
+              "displayName": "Tipo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Metodo",
+              "displayName": "Metodo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "Descricao",
+              "displayName": "Descricao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "optimizeBulk": false
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1984,
+        784
+      ],
+      "id": "ac8954b1-abdb-4780-8ba3-8fb4492ee4d4",
+      "name": "InsertData"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "fb4abef3-f2b0-4b37-93a4-f34b57ddf3a1",
+                    "leftValue": "={{ $json.Tool }}",
+                    "rightValue": "Registrar Gasto",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Registrar Gasto"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.Tool }}",
+                    "rightValue": "Relatorio",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "fc9fa44d-e0ce-41d1-b09b-b7e1d7d26b4b"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Relatório"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1408,
+        800
+      ],
+      "id": "492f3b83-7477-4d78-887c-67cb97f6a660",
+      "name": "SwitchTool"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "Tool"
+            },
+            {
+              "name": "IdConversa"
+            },
+            {
+              "name": "data_fim"
+            },
+            {
+              "name": "Descrição"
+            },
+            {
+              "name": "data_inicio"
+            },
+            {
+              "name": "Categoria"
+            },
+            {
+              "name": "Data"
+            },
+            {
+              "name": "Mês"
+            },
+            {
+              "name": "Valor"
+            },
+            {
+              "name": "Tipo de Gasto"
+            },
+            {
+              "name": "Método de Pagamento"
+            },
+            {
+              "name": "tipoTransacao"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        1248,
+        800
+      ],
+      "id": "20a4681c-8d7c-48d8-95da-38df459e9a37",
+      "name": "Tools"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.text }}\n\nData da mensagem: {{ $now.setLocale('pt-BR').toFormat(\"cccc, dd/MM/yyyy\") }}",
+        "options": {
+          "systemMessage": "=# Agente IA Financeiro - Versão Atualizada\n\n## Data/Hora Atual\n{{ $now.setLocale('pt-BR').toFormat(\"cccc, dd/MM/yyyy HH:mm\") }}\n\n## Comportamento Principal\nVocê é um assistente financeiro que registra **entradas e saídas** de dinheiro automaticamente usando function calling. Priorize **ação sobre confirmação** - registre imediatamente quando tiver informações suficientes.\n\n---\n\n## TOOLS DISPONÍVEIS\n\n### 1. registrar_gasto\n**Quando usar**: Assim que identificar valor + data + descrição válidos (entrada OU saída)\n\n**Parâmetros obrigatórios**:\n- `valor` (number): Valor numérico **COM SINAL** - positivo para entradas, negativo para saídas (ex: 20000 para salário, -45.50 para mercado)\n- `data` (string): Formato \"DD/MM/YYYY\"\n- `descricao` (string): Texto descritivo da transação\n- `categoria` (string): Uma das categorias padrão\n- `tipo` (string): \"Fixo\" ou \"Variável\"\n- `tipo_transacao` (string): \"Entrada\" ou \"Saída\"\n\n**Parâmetros opcionais**:\n- `metodo_pagamento` (string): \"Pix\", \"Cartão de Crédito\", \"Débito\", \"Dinheiro\", null\n\n### 2. gerar_relatorio\n**Quando usar**: Usuário solicita relatório, resumo ou consulta de gastos/entradas\n\n**Parâmetros**:\n- `data_inicio` (string): \"DD/MM/YYYY\"\n- `data_fim` (string): \"DD/MM/YYYY\"\n- `categoria` (string|null): Filtro de categoria específica\n\n### 3. calcular\n**Quando usar**: Qualquer operação matemática necessária\n\n**Parâmetros**:\n- `expressao` (string): Expressão matemática válida\n\n---\n\n## EXTRAÇÃO DE DADOS\n\n### Tipo de Transação (CRÍTICO)\n```yaml\nENTRADA (valor POSITIVO):\n  Palavras-chave: [salário, salario, recebimento, recebi, entrou, pagamento recebido, renda, ganho, bônus, bonus, adiantamento, freelance, venda]\n  Exemplos: \"recebi meu salário de R$5000\" → valor: 5000\n  \nSAÍDA (valor NEGATIVO):\n  Palavras-chave: [gastei, comprei, paguei, mercado, restaurante, uber, conta, boleto, taxa]\n  Padrão: Se não for claramente uma entrada, assume SAÍDA\n  Exemplos: \"gastei R$50 no mercado\" → valor: -50\n\nLógica:\n  1. Buscar palavras-chave de ENTRADA na descrição\n  2. Se encontrar → tipo_transacao=\"Entrada\", valor=positivo\n  3. Se não → tipo_transacao=\"Saída\", valor=negativo (multiplicar por -1)\n```\n\n### Valor\n```yaml\nPadrões aceitos:\n- \"R$ 45,50\" → extrair 45.50\n- \"45.5\" → 45.50\n- \"45\" → 45.00\n- \"R$1.200,00\" → 1200.00\n- \"vinte mil\" → 20000.00\n\nProcessamento:\n  1. Extrair número\n  2. Identificar se é ENTRADA ou SAÍDA\n  3. Se SAÍDA → multiplicar por -1\n  4. Se ENTRADA → manter positivo\n\nExemplos:\n  \"salário de R$5000\" → 5000 (entrada)\n  \"mercado R$45\" → -45 (saída)\n  \"recebi 20000\" → 20000 (entrada)\n  \"gastei 150\" → -150 (saída)\n```\n\n### Data\n```yaml\nConversões:\n  \"hoje\" → data atual do sistema\n  \"ontem\" → data atual - 1 dia\n  \"DD/MM\" → DD/MM/ano_atual\n  \"DD/MM/YYYY\" → usar direto\n  \nSe ambíguo ou inválido:\n  → Perguntar: \"Qual a data? (DD/MM)\"\n```\n\n### Categoria (Inferência por palavras-chave)\n```yaml\n# CATEGORIAS DE SAÍDA (gastos)\nAlimentação: [mercado, supermercado, açougue, restaurante, delivery, ifood, lanche, café, padaria, feira]\nTransporte: [uber, 99, gasolina, combustível, posto, ônibus, metrô, estacionamento, pedágio, taxi]\nMoradia: [aluguel, condomínio, luz, água, gás, internet, telefone, iptu]\nSaúde: [médico, farmácia, remédio, exame, plano de saúde, academia, dentista]\nLazer: [cinema, teatro, viagem, jogo, netflix, spotify, prime, livro, show]\nEducação: [curso, faculdade, escola, livro técnico, material escolar, mensalidade]\nVestuário: [roupa, sapato, tênis, camisa, calça, acessório, loja de roupa]\nTecnologia: [celular, computador, notebook, software, aplicativo, mouse, teclado]\nFinanceiro: [taxa, juros, investimento, empréstimo, boleto, banco]\n\n# CATEGORIAS DE ENTRADA (receitas)\nSalário: [salário, salario, ordenado, pagamento mensal]\nFreelance: [freela, freelance, bico, trabalho extra]\nInvestimento: [rendimento, dividend, juros recebidos, lucro]\nVenda: [vendi, venda, receita de venda]\nOutros: [padrão quando nenhuma categoria identificada]\n\nLógica:\n  1. Buscar palavras-chave na descrição (case-insensitive)\n  2. Se múltiplas categorias → escolher primeira match\n  3. Se nenhuma → \"Outros\"\n```\n\n### Tipo de Gasto\n```yaml\nFIXO (recorrente): [aluguel, condomínio, internet, telefone, plano, assinatura, mensalidade, financiamento, escola, academia, salário]\nVARIÁVEL (esporádico): todos os outros\n\nLógica:\n  - Se palavra-chave de FIXO → \"Fixo\"\n  - Caso contrário → \"Variável\"\n```\n\n### Método de Pagamento\n```yaml\nPalavras-chave:\n  pix, transferência → \"Pix\"\n  cartão, crédito → \"Cartão de Crédito\"\n  débito → \"Débito\"\n  dinheiro, cash, espécie → \"Dinheiro\"\n  \nSe não detectado → null\n```\n\n---\n\n## FLUXO DE EXECUÇÃO\n\n### Cenário 1: Registro de SAÍDA (gasto)\n```\nEntrada: \"R$45 mercado hoje pix\"\n\n1. Extrair: numero=45.00, data=hoje, desc=\"mercado\", pagamento=\"pix\"\n2. Identificar: tipo_transacao=\"Saída\" (não tem palavra de entrada)\n3. Aplicar sinal: valor=-45.00 (negativo)\n4. Inferir: categoria=\"Alimentação\", tipo=\"Variável\"\n5. CHAMAR registrar_gasto(valor=-45.00, data=\"04/02/2026\", descricao=\"mercado\", categoria=\"Alimentação\", tipo=\"Variável\", tipo_transacao=\"Saída\", metodo_pagamento=\"Pix\")\n6. Responder: \"✅ Saída registrada: -R$45,00 - Alimentação (mercado) - 04/02/2026\"\n```\n\n### Cenário 2: Registro de ENTRADA (receita)\n```\nEntrada: \"Recebi meu salário hoje, R$20.000 via pix\"\n\n1. Extrair: numero=20000.00, data=hoje, desc=\"salário\", pagamento=\"pix\"\n2. Identificar: tipo_transacao=\"Entrada\" (palavra \"recebi\" + \"salário\")\n3. Aplicar sinal: valor=20000.00 (positivo)\n4. Inferir: categoria=\"Salário\", tipo=\"Fixo\"\n5. CHAMAR registrar_gasto(valor=20000.00, data=\"04/02/2026\", descricao=\"salário\", categoria=\"Salário\", tipo=\"Fixo\", tipo_transacao=\"Entrada\", metodo_pagamento=\"Pix\")\n6. Responder: \"✅ Entrada registrada: +R$20.000,00 - Salário - 04/02/2026\"\n```\n\n### Cenário 3: Informação Faltando\n```\nEntrada: \"R$200 ontem\"\n\n1. Dados: valor=200.00, data=ontem\n2. FALTANDO: descrição (não consegue identificar se é entrada ou saída)\n3. Perguntar: \"Foi um gasto ou recebimento de R$200,00? O que foi?\"\n4. Aguardar resposta do usuário\n5. Com descrição → repetir Cenário 1 ou 2\n```\n\n---\n\n## VALIDAÇÕES\n```yaml\nPré-registro:\n  - valor != 0 (pode ser positivo OU negativo)\n  - Se SAÍDA: valor < 0 (negativo)\n  - Se ENTRADA: valor > 0 (positivo)\n  - data não pode ser > 7 dias no futuro\n  - descrição tem pelo menos 3 caracteres\n  - categoria é válida (lista fixa)\n  - tipo é \"Fixo\" ou \"Variável\"\n  - tipo_transacao é \"Entrada\" ou \"Saída\"\n  \nSe inválido:\n  - Não chamar tool\n  - Informar problema específico\n  - Solicitar correção\n```\n\n---\n\n## REGRAS DE RESPOSTA\n\n1. **Seja direto**: Evite \"Entendi\", \"Perfeito\", preâmbulos desnecessários\n2. **Confirme ação**: Após registrar, responda com resumo incluindo sinal (+/-)\n3. **Nunca peça confirmação manual**: Registre diretamente se dados válidos\n4. **Use emojis para clareza**: \n   - ✅ sucesso\n   - 💰 entrada (positivo)\n   - 💸 saída (negativo)\n   - ⚠️ atenção\n   - ❌ erro",
+          "returnIntermediateSteps": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        3232,
+        160
+      ],
+      "id": "187e6d67-594d-4b21-a936-7faa4e61eba0",
+      "name": "Brain"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6e305751-d3b6-4d40-a70a-18fdc2851095",
+              "name": "sucess",
+              "value": "={{ $json.id ? true : false }}",
+              "type": "boolean"
+            },
+            {
+              "id": "6a471f71-6657-4c62-aea9-c292f3addca4",
+              "name": "message",
+              "value": "={{ $json.id ? '✅ Gasto registrado! R$ ' + $json.Valor + ' - ' + $json.Categoria + ' (' + $json.Descricao + ') - ' + $json.Data : '❌ Erro ao registrar gasto' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2224,
+        784
+      ],
+      "id": "6c649292-67f2-4ea0-a5be-281c81816f10",
+      "name": "Reponse"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "57bb6dcd-9fb4-4500-b487-8a88fe12845b",
+              "leftValue": "={{ $json.Categoria }}",
+              "rightValue": "Todos",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1744,
+        976
+      ],
+      "id": "a030fc4d-bd07-4bcc-a3eb-e47e2202cf35",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "cz4SKCAvyQfpA587",
+          "mode": "list",
+          "cachedResultName": "Agente Financeiro",
+          "cachedResultUrl": "/projects/JKObSGCtgho7DIBh/datatables/cz4SKCAvyQfpA587"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "IdConversa",
+              "keyValue": "={{ $json.IdConversa }}"
+            },
+            {
+              "keyName": "Data",
+              "condition": "gte",
+              "keyValue": "={{ $json.data_inicio.split('/').reverse().join('-') }}"
+            },
+            {
+              "keyName": "Data",
+              "condition": "lte",
+              "keyValue": "={{ $json.data_fim.split('/').reverse().join('-') }}"
+            },
+            {
+              "keyName": "Categoria",
+              "keyValue": "={{ $json.Categoria !== 'Todos' ? $json.Categoria : null }}"
+            },
+            {
+              "keyName": "TipoTransacao",
+              "keyValue": "={{ $json.tipoTransacao }}"
+            }
+          ]
+        },
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1984,
+        1120
+      ],
+      "id": "406db2e2-794b-43df-935e-e236f82675ad",
+      "name": "getDataCategoria"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "cz4SKCAvyQfpA587",
+          "mode": "list",
+          "cachedResultName": "Agente Financeiro",
+          "cachedResultUrl": "/projects/JKObSGCtgho7DIBh/datatables/cz4SKCAvyQfpA587"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "IdConversa",
+              "keyValue": "={{ $json.IdConversa }}"
+            },
+            {
+              "keyName": "Data",
+              "condition": "gte",
+              "keyValue": "={{ $json.data_inicio.split('/').reverse().join('-') }}"
+            },
+            {
+              "keyName": "Data",
+              "condition": "lte",
+              "keyValue": "={{ $json.data_fim.split('/').reverse().join('-') }}"
+            },
+            {
+              "keyName": "TipoTransacao",
+              "keyValue": "={{ $json.tipoTransacao }}"
+            }
+          ]
+        },
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1984,
+        960
+      ],
+      "id": "f6b6f16d-2fdc-43ff-a6c0-a35181093439",
+      "name": "getDataTodos"
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        176,
+        160
+      ],
+      "id": "7117e224-b680-401c-bd98-b708ebe48d89",
+      "name": "Telegram Trigger",
+      "webhookId": "6039cb6d-9b9d-445c-98df-66ddfc52d4e8",
+      "credentials": {
+        "telegramApi": {
+          "id": "xdIMlVirwo4BNxKR",
+          "name": "asimov.financeiro"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-5.4",
+          "mode": "list",
+          "cachedResultName": "gpt-5.4"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        3104,
+        368
+      ],
+      "id": "8ae590b2-a510-40ac-a0e6-125dab68a0dc",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "kQPcakerfeNBEf8z",
+          "name": "asimov.academy"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "set": {
+      "main": [
+        [
+          {
+            "node": "mediaType",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "mediaType": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "getAudio",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "getImage",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "getVideo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe a recording": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "getAudio": {
+      "main": [
+        [
+          {
+            "node": "Transcribe a recording",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "getImage": {
+      "main": [
+        [
+          {
+            "node": "Analyze image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze image": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Analyze video": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "getVideo": {
+      "main": [
+        [
+          {
+            "node": "Analyze video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "text": {
+      "main": [
+        [
+          {
+            "node": "Brain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Brain",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "registrar_gasto": {
+      "ai_tool": [
+        [
+          {
+            "node": "Brain",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "gerar_relatorio": {
+      "ai_tool": [
+        [
+          {
+            "node": "Brain",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "calcular": {
+      "ai_tool": [
+        [
+          {
+            "node": "Brain",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "InsertData": {
+      "main": [
+        [
+          {
+            "node": "Reponse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SwitchTool": {
+      "main": [
+        [
+          {
+            "node": "InsertData",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tools": {
+      "main": [
+        [
+          {
+            "node": "SwitchTool",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Brain": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "getDataTodos",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "getDataCategoria",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "getDataCategoria": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "getDataTodos": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "set",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Brain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {
+    "Tools": [
+      {
+        "Tool": "Relatorio",
+        "IdConversa": 6173527791,
+        "data_fim": "29/02/2026",
+        "Descrição": null,
+        "data_inicio": "01/02/2026",
+        "Categoria": "Todos",
+        "Data": null,
+        "Mês": null,
+        "Valor": null,
+        "Tipo de Gasto": null,
+        "Método de Pagamento": null
+      }
+    ],
+    "Telegram Trigger": [
+      {
+        "update_id": 492975151,
+        "message": {
+          "message_id": 9,
+          "from": {
+            "id": 6173527791,
+            "is_bot": false,
+            "first_name": "Vitor",
+            "language_code": "pt-br"
+          },
+          "chat": {
+            "id": 6173527791,
+            "first_name": "Vitor",
+            "type": "private"
+          },
+          "date": 1772538929,
+          "text": "Ola"
+        }
+      }
+    ]
+  },
+  "meta": {
+    "instanceId": "feb12f62bb832d48b3d2839163d9212481e1958bdd2ba88351fedce40384fff9"
+  }
+}

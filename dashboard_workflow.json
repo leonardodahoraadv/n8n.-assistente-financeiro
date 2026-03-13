@@ -1,0 +1,207 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "path": "dashboard-financeiro",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "b1dc9311-cfd0-4190-b297-0874ea01d20e",
+      "name": "Webhook",
+      "webhookId": "c39aa5b8-08e2-43b8-94c8-1a0ab1c1d07a"
+    },
+    {
+      "parameters": {
+        "html": "<!DOCTYPE html>\n<html lang=\"pt-BR\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Dashboard Financeiro | Asimov Style</title>\n    \n    <!-- Fonts -->\n    <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">\n    <link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>\n    <link href=\"https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap\" rel=\"stylesheet\">\n    \n    <!-- Chart.js -->\n    <script src=\"https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js\"></script>\n    <script src=\"https://cdn.jsdelivr.net/npm/date-fns@3.3.1/cdn.min.js\"></script> <!-- Helper para datas -->\n    \n    <style>\n        :root {\n            /* Asimov Academy Inspired Palette */\n            --bg-body: #050505;\n            --bg-card: #121212;\n            --bg-card-hover: #1A1A1A;\n            --border-color: #2A2A2A;\n            \n            --text-primary: #FFFFFF;\n            --text-secondary: #A1A1AA;\n            --text-tertiary: #52525B;\n            \n            --brand-primary: #00FF94; /* Verde Neon Asimov */\n            --brand-hover: #00CC76;\n            --brand-glow: rgba(0, 255, 148, 0.2);\n            \n            --danger: #FF4D4D;\n            --success: #00FF94;\n            --info: #00B8D9;\n            --warning: #FFD700;\n            \n            --radius-sm: 8px;\n            --radius-md: 12px;\n            --radius-lg: 16px;\n        }\n\n        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-font-smoothing: antialiased; }\n\n        body {\n            font-family: 'DM Sans', sans-serif;\n            background-color: var(--bg-body);\n            color: var(--text-primary);\n            min-height: 100vh;\n            display: flex;\n            flex-direction: column;\n            line-height: 1.5;\n        }\n\n        .container {\n            max-width: 1400px;\n            width: 100%;\n            margin: 0 auto;\n            padding: 24px;\n            flex: 1;\n            display: flex;\n            flex-direction: column;\n            gap: 24px;\n        }\n\n        /* --- Header --- */\n        .header {\n            display: flex;\n            justify-content: space-between;\n            align-items: center;\n            padding-bottom: 24px;\n            border-bottom: 1px solid var(--border-color);\n            flex-wrap: wrap;\n            gap: 20px;\n        }\n\n        .brand-area { display: flex; align-items: center; gap: 16px; }\n        .logo { height: 32px; width: auto; filter: brightness(0) invert(1); opacity: 0.9; }\n        \n        .header-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }\n\n        .input-group {\n            display: flex; align-items: center;\n            background: var(--bg-card);\n            border: 1px solid var(--border-color);\n            border-radius: var(--radius-sm);\n            padding: 4px 12px;\n        }\n        .input-label {\n            font-size: 11px; font-weight: 600; color: var(--text-tertiary);\n            text-transform: uppercase; letter-spacing: 0.05em; margin-right: 8px;\n        }\n        input[type=\"date\"] {\n            background: transparent; border: none; color: var(--text-primary);\n            font-family: 'JetBrains Mono', monospace; font-size: 13px; outline: none; cursor: pointer;\n        }\n        input[type=\"date\"]::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.5; cursor: pointer; }\n\n        .btn-primary {\n            background-color: var(--brand-primary); color: #000; border: none;\n            padding: 10px 24px; border-radius: var(--radius-sm);\n            font-weight: 600; font-size: 13px; cursor: pointer;\n            text-transform: uppercase; letter-spacing: 0.03em;\n            transition: all 0.2s ease;\n        }\n        .btn-primary:hover:not(:disabled) { background-color: var(--brand-hover); box-shadow: 0 0 15px var(--brand-glow); }\n        .btn-primary:disabled { background-color: var(--border-color); color: var(--text-tertiary); cursor: not-allowed; }\n\n        .last-update {\n            font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-tertiary);\n            width: 100%; text-align: right; margin-top: -10px;\n        }\n\n        /* --- Metrics --- */\n        .metrics-grid {\n            display: grid;\n            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));\n            gap: 16px;\n        }\n\n        .metric-card {\n            background: var(--bg-card);\n            border: 1px solid var(--border-color);\n            border-radius: var(--radius-md);\n            padding: 24px;\n            display: flex; flex-direction: column; gap: 8px;\n            position: relative; overflow: hidden;\n        }\n        .metric-card::before {\n            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 1px;\n            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);\n        }\n\n        .metric-label {\n            font-size: 12px; font-weight: 600; color: var(--text-secondary);\n            text-transform: uppercase; letter-spacing: 0.05em;\n        }\n        .metric-value {\n            font-family: 'JetBrains Mono', monospace; font-size: 28px; font-weight: 600; color: var(--text-primary);\n        }\n        .text-success { color: var(--success); text-shadow: 0 0 20px rgba(0, 255, 148, 0.1); }\n        .text-danger { color: var(--danger); text-shadow: 0 0 20px rgba(255, 77, 77, 0.1); }\n        .text-info { color: var(--info); }\n\n        /* --- Grid Layout for Charts --- */\n        .dashboard-grid {\n            display: grid;\n            grid-template-columns: 1fr 1fr;\n            gap: 24px;\n        }\n        .full-width { grid-column: 1 / -1; }\n\n        @media (max-width: 900px) {\n            .dashboard-grid { grid-template-columns: 1fr; }\n        }\n\n        .panel {\n            background: var(--bg-card);\n            border: 1px solid var(--border-color);\n            border-radius: var(--radius-lg);\n            padding: 24px;\n            display: flex; flex-direction: column;\n            min-height: 350px;\n        }\n\n        .panel-header {\n            margin-bottom: 20px;\n            display: flex; justify-content: space-between; align-items: center;\n        }\n        .panel-title { font-size: 16px; font-weight: 600; color: var(--text-primary); }\n\n        .chart-controls {\n            display: flex; gap: 4px; background: var(--bg-body);\n            padding: 4px; border-radius: 6px; border: 1px solid var(--border-color);\n        }\n        .chart-toggle {\n            background: transparent; border: none; color: var(--text-secondary);\n            padding: 4px 12px; border-radius: 4px; font-size: 11px; font-weight: 600;\n            cursor: pointer; transition: all 0.2s;\n        }\n        .chart-toggle.active {\n            background: var(--border-color); color: var(--text-primary);\n        }\n\n        .chart-container {\n            position: relative; flex: 1; min-height: 0; width: 100%;\n            display: flex; align-items: center; justify-content: center;\n        }\n\n        /* --- Table --- */\n        .table-container { overflow-x: auto; max-height: 500px; }\n        table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }\n        th {\n            text-align: left; padding: 12px 16px; color: var(--text-secondary);\n            font-weight: 600; border-bottom: 1px solid var(--border-color);\n            background: var(--bg-card); position: sticky; top: 0; z-index: 10;\n        }\n        td {\n            padding: 12px 16px; border-bottom: 1px solid var(--border-color);\n            color: var(--text-primary);\n        }\n        tr:hover td { background: var(--bg-card-hover); }\n        .td-mono { font-family: 'JetBrains Mono', monospace; }\n        .tag {\n            background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius: 4px;\n            font-size: 11px; text-transform: uppercase; letter-spacing: 0.02em;\n        }\n        .tag-income { background: rgba(0, 255, 148, 0.1); color: var(--success); }\n\n        /* --- Loading/Error --- */\n        .loading-state, .empty-state {\n            display: flex; flex-direction: column; align-items: center; justify-content: center;\n            text-align: center; color: var(--text-secondary); height: 100%; width: 100%;\n        }\n        .spinner {\n            width: 40px; height: 40px; border: 3px solid var(--border-color);\n            border-top-color: var(--brand-primary); border-radius: 50%;\n            animation: spin 0.8s ease-in-out infinite; margin-bottom: 16px;\n        }\n        @keyframes spin { to { transform: rotate(360deg); } }\n        .error-banner {\n            background: rgba(255, 77, 77, 0.1); border: 1px solid rgba(255, 77, 77, 0.3);\n            color: #FF6B6B; padding: 12px 16px; border-radius: var(--radius-sm); margin-bottom: 24px; font-size: 13px;\n        }\n        \n        /* Tooltip Customization for Charts */\n        #chartjs-tooltip { opacity: 1; position: absolute; background: rgba(0, 0, 0, 0.8); color: white; border-radius: 3px; pointer-events: none; transform: translate(-50%, 0); transition: all .1s ease; }\n    </style>\n</head>\n<body>\n    <div class=\"container\">\n        <!-- Header -->\n        <header class=\"header\">\n            <div class=\"brand-area\">\n                <img src=\"https://asimov.academy/wp-content/uploads/2023/06/Logo-Asimov-Black.png\" alt=\"Asimov Academy\" class=\"logo\">\n                <span style=\"font-weight: 500; color: var(--text-tertiary); font-size: 18px;\">|</span>\n                <span style=\"font-weight: 600; font-size: 16px; letter-spacing: -0.01em;\">Dashboard Financeiro</span>\n            </div>\n            \n            <div class=\"header-controls\">\n                <div class=\"input-group\">\n                    <span class=\"input-label\">De</span>\n                    <input type=\"date\" id=\"dataInicio\">\n                </div>\n                <div class=\"input-group\">\n                    <span class=\"input-label\">Até</span>\n                    <input type=\"date\" id=\"dataFim\">\n                </div>\n                <button type=\"button\" class=\"btn-primary\" id=\"btnFetch\" onclick=\"loadDashboardData()\">\n                    Buscar Dados\n                </button>\n            </div>\n            <div class=\"last-update\" id=\"lastUpdate\"></div>\n        </header>\n\n        <div id=\"errorContainer\"></div>\n\n        <!-- Metrics Row -->\n        <div class=\"metrics-grid\" id=\"metricsRow\" style=\"display: none;\">\n            <div class=\"metric-card\">\n                <span class=\"metric-label\">Receita</span>\n                <span class=\"metric-value text-success\" id=\"revenue\">—</span>\n            </div>\n            <div class=\"metric-card\">\n                <span class=\"metric-label\">Despesas</span>\n                <span class=\"metric-value text-danger\" id=\"expenses\">—</span>\n            </div>\n            <div class=\"metric-card\">\n                <span class=\"metric-label\">Saldo</span>\n                <span class=\"metric-value text-info\" id=\"balance\">—</span>\n            </div>\n        </div>\n\n        <!-- Dashboard Grid -->\n        <div class=\"dashboard-grid\" id=\"dashboardContent\" style=\"display: none;\">\n            \n            <!-- Time Series Chart (Full Width) -->\n            <div class=\"panel full-width\">\n                <div class=\"panel-header\">\n                    <h3 class=\"panel-title\">Evolução: Gasto vs. Faturamento</h3>\n                    <div class=\"chart-controls\">\n                        <button class=\"chart-toggle active\" onclick=\"updateTimeSeries('day')\">Dia</button>\n                        <button class=\"chart-toggle\" onclick=\"updateTimeSeries('week')\">Semana</button>\n                        <button class=\"chart-toggle\" onclick=\"updateTimeSeries('month')\">Mês</button>\n                    </div>\n                </div>\n                <div class=\"chart-container\" style=\"height: 300px;\">\n                    <canvas id=\"timeSeriesChart\"></canvas>\n                </div>\n            </div>\n\n            <!-- Benchmark Bar Chart -->\n            <div class=\"panel\">\n                <div class=\"panel-header\">\n                    <h3 class=\"panel-title\">Benchmark (Despesas vs. Receita)</h3>\n                </div>\n                <div class=\"chart-container\">\n                    <canvas id=\"benchmarkChart\"></canvas>\n                </div>\n            </div>\n\n            <!-- Pie Chart -->\n            <div class=\"panel\">\n                <div class=\"panel-header\">\n                    <h3 class=\"panel-title\">Gastos por Categoria</h3>\n                </div>\n                <div class=\"chart-container\" style=\"height: 250px;\">\n                    <canvas id=\"pieChart\"></canvas>\n                </div>\n            </div>\n\n            <!-- Table -->\n            <div class=\"panel full-width\">\n                <div class=\"panel-header\">\n                    <h3 class=\"panel-title\">Extrato de Lançamentos</h3>\n                    <span style=\"font-size:12px; color:var(--text-tertiary)\" id=\"rowCount\">0 registros</span>\n                </div>\n                <div class=\"table-container\" id=\"tableContainer\">\n                    <!-- Table inject here -->\n                </div>\n            </div>\n        </div>\n\n        <!-- Initial/Loading States -->\n        <div id=\"initialState\" class=\"panel\" style=\"min-height: 400px; display: flex;\">\n            <div class=\"empty-state\">\n                <div class=\"empty-icon\">📊</div>\n                <p>Defina o período acima e clique em \"Buscar Dados\".</p>\n            </div>\n        </div>\n        \n        <div id=\"loadingState\" class=\"panel\" style=\"min-height: 400px; display: none;\">\n            <div class=\"loading-state\">\n                <div class=\"spinner\"></div>\n                <p>Carregando análises...</p>\n            </div>\n        </div>\n    </div>\n\n    <script>\n        const WEBHOOK_POST = 'https://webhook.creativelane.io/webhook/dashboard-data';\n        \n        // Globals for Charts\n        let timeSeriesChart = null;\n        let pieChart = null;\n        let benchmarkChart = null;\n        let currentRows = []; // Store rows for toggles\n\n        // --- Helpers ---\n        function getDataInicio() { return document.getElementById('dataInicio')?.value || null; }\n        function getDataFim() { return document.getElementById('dataFim')?.value || null; }\n        \n        function formatCurrency(value) {\n            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);\n        }\n        \n        function formatDate(dateStr) {\n            if (!dateStr) return '—';\n            // Fix timezone issue by treating string as local or split\n            const parts = dateStr.split('T')[0].split('-');\n            return `${parts[2]}/${parts[1]}/${parts[0]}`;\n        }\n        \n        // Detect date-fns availability (loaded via CDN)\n        const { startOfWeek, endOfWeek, startOfMonth, endOfMonth, format, parseISO } = window.dateFns || {};\n\n        function normalizeResponseData(data) {\n            if (data === null || data === undefined) return null;\n            if (typeof data === 'object') return data;\n            const str = String(data).trim();\n            if (!str) return null;\n            try { return JSON.parse(str); } catch (_) {}\n            const match = str.match(/^\\[Object:\\s*(\\{.*\\})\\s*\\]$/);\n            if (match) { try { return JSON.parse(match[1]); } catch (_) {} }\n            return data;\n        }\n\n        // --- Logic: Identify Income vs Expense ---\n        function processRow(row) {\n            const rawValor = Number(row.Valor) || 0;\n            const cat = (row.Categoria || '').toUpperCase();\n            const desc = (row.Descricao || '').toUpperCase();\n            \n            // Heurística para identificar Receita:\n            // 1. Categoria contém \"FINANCEIRO\" (ajustado para o user), \"RECEITA\", \"SALARIO\", \"ENTRADA\"\n            // 2. Descrição contém \"SALARIO\", \"PIX RECEBIDO\"\n            // 3. Valor é negativo (se a origem usa negativo para crédito)\n            // OBS: O usuário disse que salário (20k) entrou errado na box de despesa.\n            \n            let isIncome = false;\n            if (cat.includes('FINANCEIRO') || cat.includes('RECEITA') || cat.includes('SALÁRIO') || cat.includes('SALARIO')) isIncome = true;\n            if (desc.includes('SALÁRIO') || desc.includes('SALARIO')) isIncome = true;\n            \n            // Se não caiu nas regras acima, confia no sinal se for negativo?\n            // O usuário disse que no anterior o salário (20k) estava na box errada (despesa).\n            // Assumiremos: IsIncome = true -> Receita. IsIncome = false -> Despesa.\n            \n            return {\n                ...row,\n                valorAbs: Math.abs(rawValor),\n                isIncome: isIncome,\n                dateObj: row.Data ? new Date(row.Data) : null\n            };\n        }\n\n        function computeSummary(rows) {\n            let totalReceita = 0;\n            let totalDespesas = 0;\n            const byCategory = {};\n            const processedRows = rows.map(processRow);\n\n            processedRows.forEach(row => {\n                if (row.isIncome) {\n                    totalReceita += row.valorAbs;\n                } else {\n                    totalDespesas += row.valorAbs;\n                    // Categories for Pie Chart (only expenses)\n                    const cat = row.Categoria || 'Outros';\n                    byCategory[cat] = (byCategory[cat] || 0) + row.valorAbs;\n                }\n            });\n\n            return {\n                totalReceita,\n                totalDespesas,\n                saldo: totalReceita - totalDespesas,\n                byCategory,\n                rows: processedRows\n            };\n        }\n\n        // --- Render Functions ---\n\n        function updateMetrics(summary) {\n            document.getElementById('revenue').textContent = formatCurrency(summary.totalReceita);\n            document.getElementById('expenses').textContent = formatCurrency(summary.totalDespesas);\n            // Saldo text color based on value\n            const saldoEl = document.getElementById('balance');\n            saldoEl.textContent = formatCurrency(summary.saldo);\n            saldoEl.className = 'metric-value ' + (summary.saldo >= 0 ? 'text-info' : 'text-danger');\n            \n            document.getElementById('metricsRow').style.display = 'grid';\n        }\n\n        function renderBenchmarkChart(summary) {\n            const ctx = document.getElementById('benchmarkChart');\n            if (!ctx) return;\n            if (benchmarkChart) benchmarkChart.destroy();\n\n            benchmarkChart = new Chart(ctx, {\n                type: 'bar',\n                data: {\n                    labels: ['Faturamento', 'Gastos'],\n                    datasets: [{\n                        label: 'Valor',\n                        data: [summary.totalReceita, summary.totalDespesas],\n                        backgroundColor: ['#00FF94', '#FF4D4D'],\n                        borderRadius: 6,\n                        barThickness: 40\n                    }]\n                },\n                options: {\n                    indexAxis: 'y', // Horizontal bar\n                    responsive: true,\n                    maintainAspectRatio: false,\n                    plugins: {\n                        legend: { display: false },\n                        tooltip: { \n                            callbacks: { label: (c) => formatCurrency(c.raw) }\n                        }\n                    },\n                    scales: {\n                        x: { grid: { color: '#2A2A2A' }, ticks: { color: '#A1A1AA', callback: (v) => 'R$ ' + v/1000 + 'k' } },\n                        y: { grid: { display: false }, ticks: { color: '#FFFFFF', font: { weight: '600' } } }\n                    }\n                }\n            });\n        }\n\n        function renderPieChart(summary) {\n            const ctx = document.getElementById('pieChart');\n            if (!ctx) return;\n            if (pieChart) pieChart.destroy();\n\n            const labels = Object.keys(summary.byCategory);\n            const data = Object.values(summary.byCategory);\n            \n            // Asimov Colors for Pie\n            const colors = ['#00B8D9', '#6554C0', '#FF5630', '#FFAB00', '#36B37E', '#C1C7D0'];\n\n            pieChart = new Chart(ctx, {\n                type: 'doughnut',\n                data: {\n                    labels: labels,\n                    datasets: [{\n                        data: data,\n                        backgroundColor: colors,\n                        borderWidth: 0,\n                        hoverOffset: 10\n                    }]\n                },\n                options: {\n                    responsive: true,\n                    maintainAspectRatio: false,\n                    cutout: '75%',\n                    plugins: {\n                        legend: { position: 'right', labels: { color: '#A1A1AA', usePointStyle: true, font: {size: 11} } }\n                    }\n                }\n            });\n        }\n\n        function renderTable(rows) {\n            const container = document.getElementById('tableContainer');\n            document.getElementById('rowCount').textContent = `${rows.length} registros`;\n            \n            let html = `<table>\n                <thead><tr>\n                    <th>Data</th><th>Categoria</th><th>Descrição</th><th style=\"text-align:right\">Valor</th>\n                </tr></thead><tbody>`;\n            \n            rows.slice(0, 100).forEach(row => { // Limit render\n                const isIncome = row.isIncome;\n                const colorClass = isIncome ? 'text-success' : 'text-danger';\n                const sign = isIncome ? '+' : '-';\n                \n                html += `<tr>\n                    <td class=\"td-mono\">${formatDate(row.Data)}</td>\n                    <td><span class=\"tag ${isIncome ? 'tag-income' : ''}\">${row.Categoria || 'OUTROS'}</span></td>\n                    <td>${row.Descricao || ''}</td>\n                    <td class=\"td-mono ${colorClass}\" style=\"text-align:right\">\n                        ${sign} ${formatCurrency(row.valorAbs)}\n                    </td>\n                </tr>`;\n            });\n            html += '</tbody></table>';\n            container.innerHTML = html;\n        }\n\n        // --- Time Series Logic ---\n        \n        function updateTimeSeries(groupBy) {\n            // Update active button state\n            document.querySelectorAll('.chart-toggle').forEach(b => b.classList.remove('active'));\n            event.target.classList.add('active');\n\n            renderTimeSeriesChart(currentRows, groupBy);\n        }\n\n        function renderTimeSeriesChart(rows, groupBy = 'day') {\n            const ctx = document.getElementById('timeSeriesChart');\n            if (!ctx) return;\n            if (timeSeriesChart) timeSeriesChart.destroy();\n\n            // Group Data\n            const groups = {}; // Key -> { receita: 0, despesa: 0 }\n            \n            rows.forEach(row => {\n                if (!row.dateObj) return;\n                let key;\n                \n                // Using simple formatting for grouping keys\n                const d = row.dateObj;\n                if (groupBy === 'day') key = d.toISOString().split('T')[0]; // YYYY-MM-DD\n                if (groupBy === 'week') {\n                    // Simple week grouping: Start of Week date\n                    const day = d.getDay();\n                    const diff = d.getDate() - day + (day == 0 ? -6 : 1); // adjust when day is sunday\n                    const monday = new Date(d.setDate(diff));\n                    key = monday.toISOString().split('T')[0];\n                }\n                if (groupBy === 'month') key = d.toISOString().slice(0, 7); // YYYY-MM\n\n                if (!groups[key]) groups[key] = { receita: 0, despesa: 0 };\n                \n                if (row.isIncome) groups[key].receita += row.valorAbs;\n                else groups[key].despesa += row.valorAbs;\n            });\n\n            // Sort keys\n            const sortedKeys = Object.keys(groups).sort();\n            \n            // Format labels\n            const labels = sortedKeys.map(k => {\n                const parts = k.split('-');\n                if (groupBy === 'month') return `${parts[1]}/${parts[0]}`;\n                return `${parts[2]}/${parts[1]}`;\n            });\n\n            const dataReceita = sortedKeys.map(k => groups[k].receita);\n            const dataDespesa = sortedKeys.map(k => groups[k].despesa);\n\n            timeSeriesChart = new Chart(ctx, {\n                type: 'line',\n                data: {\n                    labels: labels,\n                    datasets: [\n                        {\n                            label: 'Faturamento',\n                            data: dataReceita,\n                            borderColor: '#00FF94', // Green\n                            backgroundColor: 'rgba(0, 255, 148, 0.1)',\n                            tension: 0.4,\n                            fill: true,\n                            pointRadius: 4,\n                            pointBackgroundColor: '#050505',\n                            pointBorderColor: '#00FF94',\n                            pointBorderWidth: 2\n                        },\n                        {\n                            label: 'Gasto',\n                            data: dataDespesa,\n                            borderColor: '#FF4D4D', // Red\n                            backgroundColor: 'transparent',\n                            tension: 0.4,\n                            borderDash: [5, 5],\n                            pointRadius: 4,\n                            pointBackgroundColor: '#050505',\n                            pointBorderColor: '#FF4D4D',\n                            pointBorderWidth: 2\n                        }\n                    ]\n                },\n                options: {\n                    responsive: true,\n                    maintainAspectRatio: false,\n                    interaction: { mode: 'index', intersect: false },\n                    plugins: {\n                        legend: { labels: { color: '#A1A1AA', font: {family: 'DM Sans'} } },\n                        tooltip: { \n                            backgroundColor: '#121212', \n                            titleColor: '#fff', \n                            bodyColor: '#A1A1AA',\n                            borderColor: '#2A2A2A',\n                            borderWidth: 1,\n                            callbacks: { label: (c) => `${c.dataset.label}: ${formatCurrency(c.raw)}` }\n                        }\n                    },\n                    scales: {\n                        x: { grid: { color: '#2A2A2A', drawBorder: false }, ticks: { color: '#A1A1AA' } },\n                        y: { grid: { color: '#2A2A2A', borderDash: [2, 4], drawBorder: false }, ticks: { color: '#52525B', callback: (v) => 'R$ ' + v } }\n                    }\n                }\n            });\n        }\n\n        // --- Main Flow ---\n\n        async function loadDashboardData() {\n            const btn = document.getElementById('btnFetch');\n            const dataInicio = getDataInicio();\n            const dataFim = getDataFim();\n\n            // UI States\n            document.getElementById('initialState').style.display = 'none';\n            document.getElementById('dashboardContent').style.display = 'none';\n            document.getElementById('metricsRow').style.display = 'none';\n            document.getElementById('loadingState').style.display = 'flex';\n            document.getElementById('errorContainer').innerHTML = '';\n            \n            btn.disabled = true;\n            btn.innerHTML = 'Carregando...';\n\n            // Default dates if empty\n            const now = new Date();\n            const start = new Date(); start.setMonth(start.getMonth() - 1);\n            const body = {\n                dataInicio: dataInicio || start.toISOString().slice(0, 10),\n                dataFim: dataFim || now.toISOString().slice(0, 10)\n            };\n\n            try {\n                const postResponse = await fetch(WEBHOOK_POST, {\n                    method: 'POST',\n                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json,*/*' },\n                    body: JSON.stringify(body)\n                });\n\n                if (!postResponse.ok) throw new Error('Status: ' + postResponse.status);\n\n                const contentType = postResponse.headers.get('content-type');\n                let rawData = contentType && contentType.includes('application/json') \n                    ? await postResponse.json() : await postResponse.text();\n                \n                const data = normalizeResponseData(rawData);\n                let rows = [];\n                if (data) {\n                     rows = Array.isArray(data) ? data : [data];\n                }\n\n                if (!rows.length || (!rows[0].Categoria && !rows[0].Valor)) {\n                    throw new Error(\"Nenhum dado financeiro encontrado.\");\n                }\n\n                // Process Data\n                const summary = computeSummary(rows);\n                currentRows = summary.rows; // Store for toggles\n\n                // Render UI\n                document.getElementById('loadingState').style.display = 'none';\n                document.getElementById('dashboardContent').style.display = 'grid';\n                document.getElementById('lastUpdate').textContent = 'Atualizado: ' + new Date().toLocaleString('pt-BR');\n\n                updateMetrics(summary);\n                renderTable(summary.rows);\n                renderPieChart(summary);\n                renderBenchmarkChart(summary);\n                renderTimeSeriesChart(summary.rows, 'day'); // Default view\n\n            } catch (err) {\n                document.getElementById('loadingState').style.display = 'none';\n                document.getElementById('initialState').style.display = 'flex';\n                const container = document.getElementById('errorContainer');\n                container.innerHTML = `<div class=\"error-banner\"><strong>Erro ao carregar:</strong> ${err.message}</div>`;\n            } finally {\n                btn.disabled = false;\n                btn.innerHTML = 'BUSCAR DADOS';\n            }\n        }\n\n        // Init defaults\n        window.addEventListener('DOMContentLoaded', () => {\n            const end = new Date();\n            const start = new Date(); start.setMonth(start.getMonth() - 1);\n            const dI = document.getElementById('dataInicio');\n            const dF = document.getElementById('dataFim');\n            if (dI && !dI.value) dI.value = start.toISOString().slice(0, 10);\n            if (dF && !dF.value) dF.value = end.toISOString().slice(0, 10);\n        });\n    </script>\n</body>\n</html>"
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "5d3c7e53-617e-403b-9279-c3a1906a33fe",
+      "name": "HTML"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.html }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        416,
+        0
+      ],
+      "id": "1b4117ec-3de0-426c-a01f-693c9094e794",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "dashboard-data",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        256
+      ],
+      "id": "be9a72aa-f1f4-4851-a6cb-d15ab9e18f1d",
+      "name": "Data",
+      "webhookId": "7170fd95-a49e-4c2f-8f36-17ec5e941545"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "j9WgBl4oQeywy52p",
+          "mode": "list",
+          "cachedResultName": "Agente Financeiro",
+          "cachedResultUrl": "/projects/zA2G7GrBIqZCqRNH/datatables/j9WgBl4oQeywy52p"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "IdConversa",
+              "keyValue": "6173527791"
+            },
+            {
+              "keyName": "Data",
+              "condition": "gte",
+              "keyValue": "={{ $json.body.dataInicio }}"
+            },
+            {
+              "keyName": "Data",
+              "condition": "lte",
+              "keyValue": "={{ $json.body.dataFim }}"
+            }
+          ]
+        },
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        208,
+        256
+      ],
+      "id": "0d8e20c0-014f-4065-b986-79bf03acc45d",
+      "name": "Get row(s)"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($input.all().map(i => i.json)) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        416,
+        256
+      ],
+      "id": "4bf146ab-a012-42d2-8dc5-f4b2ba46d79a",
+      "name": "Respond to Webhook1"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Data": {
+      "main": [
+        [
+          {
+            "node": "Get row(s)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s)": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {
+    "Webhook": [
+      {
+        "headers": {
+          "host": "webhook.creativelane.io",
+          "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36",
+          "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+          "accept-encoding": "gzip, deflate, br, zstd",
+          "accept-language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+          "webhookUrl": "https://webhook.creativelane.io/webhook/dashboard-financeiro",
+          "executionMode": "production"
+        },
+        "params": {},
+        "query": {},
+        "body": {},
+        "webhookUrl": "https://webhook.creativelane.io/webhook/dashboard-financeiro",
+        "executionMode": "production"
+      }
+    ],
+    "Data": [
+      {
+        "headers": {
+          "host": "webhook.creativelane.io",
+          "content-type": "application/json",
+          "webhookUrl": "https://webhook.creativelane.io/webhook/dashboard-data",
+          "executionMode": "production"
+        },
+        "params": {},
+        "query": {},
+        "body": {
+          "dataInicio": "2026-01-04",
+          "dataFim": "2026-02-04"
+        },
+        "webhookUrl": "https://webhook.creativelane.io/webhook/dashboard-data",
+        "executionMode": "production"
+      }
+    ]
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "feb12f62bb832d48b3d2839163d9212481e1958bdd2ba88351fedce40384fff9"
+  }
+}
